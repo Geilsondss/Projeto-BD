@@ -209,8 +209,8 @@ INSERT INTO Usuario (CPF, Nome, Senha, Foto) VALUES
 ('11111111111', 'Geilson Sa', 'senha1', NULL),
 ('22222222222', 'Wesley Oliveira', 'senha2', NULL),
 ('33333333333', 'Arthur Delpino', 'senha3', NULL),
-('44444444444', Victor Fontes', 'senha4', NULL),
-('55555555555', Maristela Holanda, 'senha5', NULL);
+('44444444444', 'Victor Fontes', 'senha4', NULL),
+('55555555555', 'Maristela Holanda', 'senha5', NULL);
 
 -- Inserções na tabela Realiza
 INSERT INTO Realiza (CPF, Trajeto_Id) VALUES
