@@ -82,7 +82,7 @@ CREATE TABLE Incidente (
 CREATE TABLE Motorista (
     Motorista_Id INT PRIMARY KEY,
     Nome VARCHAR(50),
-    Foto BYTEA,
+    Foto BLOB,
     Contato VARCHAR(50),
     IdLinha INT,
     FOREIGN KEY (IdLinha) REFERENCES Linha (Linha_Id)
@@ -102,7 +102,7 @@ CREATE TABLE Usuario (
     CPF VARCHAR(11) PRIMARY KEY,
     Nome VARCHAR(50),
     Senha VARCHAR(50),
-    Foto BYTEA
+    Foto BLOB
 );
 
 -- Tabela Realiza
