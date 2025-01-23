@@ -45,8 +45,8 @@ CREATE TABLE Itinerario (
 -- Tabela Trajeto
 CREATE TABLE Trajeto (
     Trajeto_Id INT PRIMARY KEY,
-    Estacao_origem VARCHAR(50),
-    Estacao_destino VARCHAR(50)
+    Origem VARCHAR(50),
+    Destino VARCHAR(50)
 );
 
 -- Tabela Linha
@@ -157,7 +157,7 @@ INSERT INTO Itinerario (Itinerario_Id, Horario_saida, Horario_chegada, Funciona_
 (4005, '20:45:00', '21:15:00', 'Todos os dias');
 
 -- Inserções na tabela Trajeto
-INSERT INTO Trajeto (Trajeto_Id, Estacao_origem, Estacao_destino) VALUES
+INSERT INTO Trajeto (Trajeto_Id, Origem, Destino) VALUES
 (5001, 'Estação Central', 'Estação Praça do Relógio'),
 (5002, 'Estação Ceilândia Norte', 'Estação Águas Claras'),
 (5003, 'Estação Águas Claras', 'Estação Terminal Samambaia'),
