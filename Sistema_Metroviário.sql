@@ -13,13 +13,13 @@ CREATE DATABASE "sistema metroviario"
 
 
 -- Tabela Cidade
-CREATE TABLE Cidade (
+CREATE TABLE IF NOT EXISTS Cidade (
     Cidade_Id INT PRIMARY KEY,
     Nome VARCHAR(50)
 );
 
 -- Tabela Estação
-CREATE TABLE Estacao (
+CREATE TABLE IF NOT EXISTS Estacao (
     Estacao_Id INT PRIMARY KEY,
     Localizacao VARCHAR(50),
     Nome VARCHAR(50),
@@ -28,14 +28,14 @@ CREATE TABLE Estacao (
 );
 
 -- Tabela Empresa
-CREATE TABLE Empresa (
+CREATE TABLE IF NOT EXISTS Empresa (
     Empresa_Id INT PRIMARY KEY,
     Nome VARCHAR(50),
     Telefone VARCHAR(15)
 );
 
 -- Tabela Itinerário
-CREATE TABLE Itinerario (
+CREATE TABLE IF NOT EXISTS Itinerario (
     Itinerario_Id INT PRIMARY KEY,
     Horario_saida TIME,
     Horario_chegada TIME,
@@ -43,14 +43,14 @@ CREATE TABLE Itinerario (
 );
 
 -- Tabela Trajeto
-CREATE TABLE Trajeto (
+CREATE TABLE IF NOT EXISTS Trajeto (
     Trajeto_Id INT PRIMARY KEY,
     Origem VARCHAR(50),
     Destino VARCHAR(50)
 );
 
 -- Tabela Linha
-CREATE TABLE Linha (
+CREATE TABLE IF NOT EXISTS Linha (
     Linha_Id INT PRIMARY KEY,
     Nome VARCHAR(50),
     IdEmpresa INT,
@@ -60,7 +60,7 @@ CREATE TABLE Linha (
 );
 
 -- Tabela Metro
-CREATE TABLE Metro (
+CREATE TABLE IF NOT EXISTS Metro (
     Metro_Id INT PRIMARY KEY,
     Capacidade INT,
     Modelo VARCHAR(50),
@@ -69,7 +69,7 @@ CREATE TABLE Metro (
 );
 
 -- Tabela Incidente
-CREATE TABLE Incidente (
+CREATE TABLE IF NOT EXISTS Incidente (
     Data DATE,
     Tipo VARCHAR(50),
     IdTrajeto INT,
@@ -79,17 +79,17 @@ CREATE TABLE Incidente (
 );
 
 -- Tabela Motorista
-CREATE TABLE Motorista (
+CREATE TABLE IF NOT EXISTS Motorista (
     Motorista_Id INT PRIMARY KEY,
     Nome VARCHAR(50),
-    Foto BLOB,
+    Foto BYTEA,
     Contato VARCHAR(50),
     IdLinha INT,
     FOREIGN KEY (IdLinha) REFERENCES Linha (Linha_Id)
 );
 
 -- Tabela Passa_por
-CREATE TABLE Passa_por (
+CREATE TABLE IF NOT EXISTS Passa_por (
     Estacao_Id INT,
     Linha_Id INT,
     PRIMARY KEY (Estacao_Id, Linha_Id),
@@ -98,15 +98,15 @@ CREATE TABLE Passa_por (
 );
 
 -- Tabela Usuario
-CREATE TABLE Usuario (
+CREATE TABLE IF NOT EXISTS Usuario (
     CPF VARCHAR(11) PRIMARY KEY,
     Nome VARCHAR(50),
     Senha VARCHAR(50),
-    Foto BLOB
+    Foto BYTEA
 );
 
 -- Tabela Realiza
-CREATE TABLE Realiza (
+CREATE TABLE IF NOT EXISTS Realiza (
     CPF VARCHAR(11),
     Trajeto_Id INT,
     PRIMARY KEY (CPF, Trajeto_Id),
@@ -115,7 +115,7 @@ CREATE TABLE Realiza (
 );
 
 -- Tabela Possui
-CREATE TABLE Possui (
+CREATE TABLE IF NOT EXISTS Possui (
     Itinerario_Id INT,
     Linha_Id INT,
     PRIMARY KEY (Itinerario_Id, Linha_Id),
