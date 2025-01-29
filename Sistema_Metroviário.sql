@@ -228,6 +228,64 @@ INSERT INTO Possui (Itinerario_Id, Linha_Id) VALUES
 (4004, 6004),
 (4005, 6005);
 
+-- POSSÍVEIS VIEWS
+
+--View para listar as linhas e seus itinerários
+CREATE VIEW view_linhas_itinerarios AS
+SELECT l.Linha_Id, l.Nome AS Linha_Nome, 
+i.Itinerario_Id, i.Horario_saida, 
+i.Horario_chegada, i.Funciona_Dias
+FROM Linha l
+JOIN Possui p ON l.Linha_Id = p.Linha_Id
+JOIN Itinerario i ON p.Itinerario_Id = i.Itinerario_Id;
+
+SELECT * FROM view_linhas_itinerarios;
+
+--View para listar incidentes por trajeto e metrô
+CREATE VIEW view_incidentes AS
+SELECT i.Data, i.Tipo, t.Origem, t.Destino, m.Modelo AS Metro_Modelo, m.Capacidade
+FROM Incidente i
+JOIN Trajeto t ON i.IdTrajeto = t.Trajeto_Id
+JOIN Metro m ON i.IdMetro = m.Metro_Id;
+
+SELECT * FROM view_incidentes;
+
+--View para listar usuários e os trajetos que eles realizam
+CREATE VIEW view_usuarios_trajetos AS
+SELECT usu.CPF, usu.Nome AS Usuario_Nome, tra.Origem, tra.Destino
+FROM Usuario usu
+JOIN Realiza rea ON usu.CPF = rea.CPF
+JOIN Trajeto tra ON rea.Trajeto_Id = tra.Trajeto_Id;
+
+SELECT * FROM view_usuarios_trajetos;
+
+-- View para listar todas as linhas e as estações por onde elas passam
+CREATE VIEW view_linhas_estacoes AS
+SELECT l.Linha_Id, l.Nome AS Linha_Nome, e.Nome AS Estacao_Nome, e.Localizacao
+FROM Linha l
+JOIN Passa_por pp ON l.Linha_Id = pp.Linha_Id
+JOIN Estacao e ON pp.Estacao_Id = e.Estacao_Id;
+
+SELECT * FROM view_linhas_estacoes;
+
+
+-- View para listar todas os Incidentes por Linha de Metrô
+CREATE VIEW view_incidentes_linhas AS
+SELECT
+    l.Linha_Id,
+    l.Nome AS Nome_Linha,
+    t.Origem,
+    t.Destino,
+    inc.Data AS Data_Incidente,
+    inc.Tipo AS Tipo_Incidente
+FROM
+    Linha l
+JOIN Trajeto t ON l.IdTrajeto = t.Trajeto_Id
+LEFT JOIN Incidente inc ON t.Trajeto_Id = inc.IdTrajeto
+ORDER BY l.Linha_Id, inc.Data;
+
+SELECT * FROM view_incidentes_linhas;
+
 
 
 
