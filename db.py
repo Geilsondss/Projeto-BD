@@ -123,6 +123,17 @@ def create_tables():
             FOREIGN KEY (Itinerario_Id) REFERENCES Itinerario (Itinerario_Id),
             FOREIGN KEY (Linha_Id) REFERENCES Linha (Linha_Id) ON DELETE CASCADE
         );
+                   
+        CREATE VIEW Cidades_visitadas AS
+        SELECT c.nome AS cidade
+        FROM Usuario u
+        JOIN Realiza r ON u.cpf = r.cpf
+        JOIN Trajeto t ON r.trajeto_id = t.trajeto_id
+        JOIN Linha l ON l.idTrajeto = t.Trajeto_id
+        JOIN Passar_Por p ON p.linha_id = l.linha_id
+        JOIN Estação e ON e.estacao_id = p.estacao_id
+        JOIN Cidade c ON c.cidade_id = e.cidade_id
+        WHERE u.CPF = :cpf;
     ''')
 
     connection.commit()
@@ -204,7 +215,7 @@ def get_my_paths(connection, cpf):
 def get_not_my_paths(connection, cpf):
     cursor = connection.cursor()
 
-    cursor.execute("SELECT t.* FROM Trajeto t JOIN Realiza r ON t.trajeto_id = r.trajeto_id WHERE NOT r.cpf = %s",
+    cursor.execute("SELECT t.* FROM Trajeto t JOIN Realiza r ON t.trajeto_id = r.trajeto_id WHERE r.cpf != %s",
                    (cpf,)
     )
 
