@@ -56,18 +56,15 @@ def search_photo(photo_panel, photo=None, path=None):
             photo_panel.image = photo
 
 def default_photo(photo_panel, path):
-    path.set("default.jpg")
+    path.set("./Projeto-BD/default.jpg")
 
-    photo = Photo.open("default.jpg")
+    photo = Photo.open("./Projeto-BD/default.jpg")
     photo = photo.resize((100, 100))
 
     photo = PhotoTk.PhotoImage(photo)
 
     photo_panel.config(image=photo)
     photo_panel.image = photo
-
-
-### Frames ###
 
 def main():
     main_screen = tkinter.Tk()
@@ -129,6 +126,7 @@ def main():
         photo_panel.image = str()
         default_photo(photo_panel, path)
 
+
     ### Labels ###
     name_label = tkinter.Label(main_screen, text="Nome:")
     name_label.grid(row=0, column=0, padx=10, pady=10)
@@ -175,8 +173,6 @@ def main():
 
     main_screen.mainloop()
 
-    connection.close()
-
 def home(user):
     home_screen = tkinter.Tk()
     home_screen.title("Menu")
@@ -214,10 +210,13 @@ def home(user):
     delete_button.grid(row=0, column=3, padx=10, pady=10)
 
     leave_button = tkinter.Button(home_screen, text="Sair", width=10, command=leave)
-    leave_button.grid(row=0, column=4, padx=10, pady=10)
+    leave_button.grid(row=0, column=4, padx=10, pady=10, sticky="w")
+
+    routes_button = tkinter.Button(home_screen, text="Gerenciar Linhas", width=15, command=lambda: manage_routes(home_screen, user))
+    routes_button.grid(row=4, column=4, padx=80, pady=10)
 
     paths_button = tkinter.Button(home_screen, text="Adicionar", width=10, command=lambda: assign_path(home_screen, user))
-    paths_button.grid(row=3, column=1, pady=10, sticky="w")
+    paths_button.grid(row=3, column=1, padx=20, pady=10, sticky="w")
 
 
     ### Scroll Frame ###
@@ -236,7 +235,7 @@ def home(user):
     canvas.create_window((0, 0), window=path_frame, anchor="nw")
 
     for i, path in enumerate(paths):
-        path_label = tkinter.Label(path_frame, text=f"Origem: {path[1]} - Destino: {path[2]}")
+        path_label = tkinter.Label(path_frame, text=f"{path[1]} - {path[2]}")
         path_label.grid(row=i, column=2, padx=10, pady=5, sticky="w")
 
         path_change_button = tkinter.Button(path_frame, text="Alterar", width=6, command=lambda: change_path(home_screen, path, user))
@@ -353,14 +352,16 @@ def assign_path(screen, user):
     screen.destroy()
 
     path_screen = tkinter.Tk()
-    path_screen.title("Novo Trajeto")
+    path_screen.title("Trajetos")
 
-    set_geometry(path_screen, 780, 385)
+    set_geometry(path_screen, 780, 405)
 
     paths = db.get_not_my_paths(connection, user[0])
 
+
+    ### Frames ###
     select_frame = tkinter.Frame(path_screen)
-    select_frame.grid(row=0, column=0, columnspan=20, padx=20, sticky="w")
+    select_frame.grid(row=0, column=0, columnspan=20, padx=20, pady=(20, 0), sticky="w")
     new_path_frame = tkinter.Frame(path_screen)
     new_path_frame.grid(row=1, column=0, columnspan=20, padx=20, pady=20, sticky="w")
 
@@ -383,6 +384,7 @@ def assign_path(screen, user):
     def back():
         path_screen.destroy()
         home(user)
+
 
     ### Select ###
     select = ttk.Treeview(select_frame, columns=("Trajeto_Id", "Origem", "Destino"), show="headings")
@@ -419,7 +421,7 @@ def assign_path(screen, user):
     add_button = tkinter.Button(new_path_frame, text="Criar Novo Trajeto", command=create)
     add_button.grid(row=2, column=0, pady=10, sticky="w")
 
-    back_button = tkinter.Button(new_path_frame, text="Voltar", command=back)
+    back_button = tkinter.Button(new_path_frame, text="Voltar", width=8, command=back)
     back_button.grid(row=2, column=1, padx=25, pady=10, sticky="w")
 
     path_screen.mainloop()
@@ -478,6 +480,234 @@ def delete_path(screen, user, path):
         db.delete_path(connection, path)
         screen.destroy()
         home(user)
+
+def manage_routes(screen, user):
+    screen.destroy()
+
+    manage_screen = tkinter.Tk()
+    manage_screen.title("Linhas")
+
+    set_geometry(manage_screen, 880, 460)
+
+    items = db.get_routes(connection)
+    collect_items = dict()
+    collect_routes = dict()
+    collect_corps = dict()
+    collect_paths = dict()
+
+    for item in items:
+        collect_routes[item[1]] = item[0]
+        collect_corps[item[3]] = item[2]
+        collect_paths[item[5] + " - " + item[6]] = item[4]
+        collect_items[item[1]] = item
+
+
+    ### Frames ###
+    select_frame = tkinter.Frame(manage_screen)
+    select_frame.grid(row=0, column=1, columnspan=20, padx=20, sticky="w")
+    new_route_frame = tkinter.Frame(manage_screen)
+    new_route_frame.grid(row=1, column=0, columnspan=20, padx=20, sticky="w")
+
+
+    ### Functions ###
+    def create():
+        if not name_field.get() == "" and not corp_var.get() == "" and not path_var.get() == "":
+            route_name = name_field.get()
+            corp_name = corp_var.get()
+            path_name = path_var.get()  
+
+            corp_id = collect_corps[corp_name]
+            path_id = collect_paths[path_name]
+            
+            db.new_route(connection, route_name, corp_id, path_id)
+            manage_routes(manage_screen, user)
+
+    
+    def update():
+        item = select.selection()
+
+        if item:        
+            route_name = select.item(item, "values")[0]
+            route = collect_items[route_name]
+
+            update_route(manage_screen, user, route, items)
+
+    def delete():
+        item = select.selection()
+
+        if item:        
+            choice = message.askyesno("Confirmar", "Tem certeza que deseja deletar essa linha?")
+
+            if choice:  
+                route_name = select.item(item, "values")[0]
+                route_id = collect_routes[route_name]
+
+                db.delete_route(connection, route_id[0])
+                manage_routes(manage_screen, user)  
+
+    def back():
+        manage_screen.destroy()
+        home(user)
+
+
+    ### Select ###
+    select = ttk.Treeview(manage_screen, columns=("Linha", "Empresa", "Trajeto"), show="headings")
+    select.grid(row=0, column=0, padx=(20, 0), pady=20, sticky="w")
+
+    select.heading("Linha", text="Linha")
+    select.heading("Empresa", text="Empresa")
+    select.heading("Trajeto", text="Trajeto")
+
+    select.column("#1", width=150)
+    select.column("#2", width=180)
+    select.column("#3", width=340)
+
+    for item in items:
+        select.insert("", "end", values=(item[1], item[3], f"{item[5]} - {item[6]}"))
+
+
+    ### Options ###
+    corp_option = [corp[1] for corp in db.get_corps(connection)]
+    path_option = [path[1] + " - " + path[2] for path in db.get_paths(connection)]
+
+    corp_var = tkinter.StringVar()
+    path_var = tkinter.StringVar()
+
+    if len(corp_option) > 0:
+        corp_var.set(corp_option[0])
+        path_var.set(path_option[0])
+
+        corp_menu = tkinter.OptionMenu(new_route_frame, corp_var, *corp_option)
+        corp_menu.grid(row=1, column=1, pady=10, sticky="w")
+        path_menu = tkinter.OptionMenu(new_route_frame, path_var, *path_option)
+        path_menu.grid(row=2, column=1, pady=10, sticky="w")
+    else:
+        corp_var.set("")
+        path_var.set("")
+
+        corp_menu = tkinter.OptionMenu(new_route_frame, corp_var, "")
+        corp_menu.grid(row=1, column=1, pady=10, sticky="w")
+        path_menu = tkinter.OptionMenu(new_route_frame, path_var, "")
+        path_menu.grid(row=2, column=1, pady=10, sticky="w")
+
+
+    ### Labels ###
+    name_label = tkinter.Label(new_route_frame, text="Nome:")
+    name_label.grid(row=0, column=0, pady=10, sticky="w")
+
+    corp_label = tkinter.Label(new_route_frame, text="Empresa:")
+    corp_label.grid(row=1, column=0, pady=10, sticky="w")
+
+    path_label = tkinter.Label(new_route_frame, text="Trajeto:")
+    path_label.grid(row=2, column=0, pady=10, sticky="w")
+
+
+    ### Fields ###
+    name_field = tkinter.Entry(new_route_frame, width=55)
+    name_field.grid(row=0, column=1, pady=10, sticky="w")
+
+
+    ### Buttons ###
+    update_button = tkinter.Button(select_frame, text="Atualizar Linha", width=13, command=update)
+    update_button.grid(row=0, column=0, padx=20, pady=10, sticky="w")
+
+    delete_button = tkinter.Button(select_frame, text="Excluir Linha", width=13, command=delete)
+    delete_button.grid(row=1, column=0, padx=20, pady=10, sticky="w")
+
+    add_button = tkinter.Button(new_route_frame, text="Criar Nova Linha", command=create)
+    add_button.grid(row=3, column=0, pady=10, sticky="w")
+
+    back_button = tkinter.Button(new_route_frame, text="Voltar", width=8, command=back)
+    back_button.grid(row=3, column=1, padx=30, pady=10, sticky="w")
+
+    manage_screen.mainloop()
+
+def update_route(screen, user, route, items):
+    screen.destroy()
+
+    update_screen = tkinter.Tk()
+    update_screen.title("Atualizar Linha")
+
+    set_geometry(update_screen, 450, 260)
+
+    collect_corps = collect_paths = dict()
+
+    for item in items:
+        collect_corps[item[3]] = item[2]
+        collect_paths[item[5] + " - " + item[6]] = item[4]
+
+
+    ### Frame ###
+    frame = tkinter.Frame(update_screen)
+    frame.grid(row=0, column=0, padx=10, pady=10, sticky="w")
+    
+
+    ### Functions ###
+    def update(): 
+        route_name = name_field.get()
+        corp_name = corp_var.get()
+        path_name = path_var.get()  
+
+        corp_id = collect_corps[corp_name]
+        path_id = collect_paths[path_name]
+        
+        db.update_route(connection, route[0], route_name, corp_id, path_id)
+        manage_routes(update_screen, user)
+    
+    def back():
+        manage_routes(update_screen, user)
+            
+
+    ### Options ###
+    corp_option = [corp[1] for corp in db.get_corps(connection)]
+    path_option = [path[1] + " - " + path[2] for path in db.get_paths(connection)]
+
+    corp_var = tkinter.StringVar()
+    path_var = tkinter.StringVar()
+
+    if len(corp_option) > 0:
+        corp_var.set(route[3])
+        path_var.set(item[5] + " - " + item[6])
+
+        corp_menu = tkinter.OptionMenu(frame, corp_var, *corp_option)
+        corp_menu.grid(row=1, column=1, pady=10, sticky="w")
+        path_menu = tkinter.OptionMenu(frame, path_var, *path_option)
+        path_menu.grid(row=2, column=1, pady=10, sticky="w")
+    else:
+        corp_var.set("")
+        path_var.set("")
+
+        corp_menu = tkinter.OptionMenu(frame, corp_var, "")
+        corp_menu.grid(row=1, column=1, pady=10, sticky="w")
+        path_menu = tkinter.OptionMenu(frame, path_var, "")
+        path_menu.grid(row=2, column=1, pady=10, sticky="w")
+
+
+    ### Labels ###
+    name_label = tkinter.Label(frame, text="Nome:")
+    name_label.grid(row=0, column=0, padx=10, pady=10, sticky="w")
+
+    corp_label = tkinter.Label(frame, text="Empresa:")
+    corp_label.grid(row=1, column=0, padx=10, pady=10, sticky="w")
+
+    path_label = tkinter.Label(frame, text="Trajeto:")
+    path_label.grid(row=2, column=0, padx=10, pady=10, sticky="w")
+
+
+    ### Fields ###
+    name_field = tkinter.Entry(frame, width=55)
+    name_field.grid(row=0, column=1, pady=10, sticky="w")
+    name_field.insert(0, route[1])
+
+
+    ### Buttons ###
+    update_button = tkinter.Button(update_screen, text="Atualizar Linha", width=13, command=update)
+    update_button.grid(row=3, column=0, padx=20, pady=10, sticky="w")
+
+    back_button = tkinter.Button(update_screen, text="Voltar", width=8, command=back)
+    back_button.grid(row=4, column=0, padx=20, pady=10, sticky="w")
+
+    update_screen.mainloop()
 
 if __name__ == "__main__":
     main()

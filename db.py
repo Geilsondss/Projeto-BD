@@ -52,7 +52,7 @@ def create_tables():
 
         -- Tabela Linha
         CREATE TABLE IF NOT EXISTS Linha (
-            Linha_Id INT PRIMARY KEY,
+            Linha_Id SERIAL PRIMARY KEY,
             Nome VARCHAR(50),
             IdEmpresa INT,
             IdTrajeto INT,
@@ -124,16 +124,18 @@ def create_tables():
             FOREIGN KEY (Linha_Id) REFERENCES Linha (Linha_Id) ON DELETE CASCADE
         );
                    
-        CREATE VIEW Cidades_visitadas AS
-        SELECT c.nome AS cidade
-        FROM Usuario u
-        JOIN Realiza r ON u.cpf = r.cpf
-        JOIN Trajeto t ON r.trajeto_id = t.trajeto_id
-        JOIN Linha l ON l.idTrajeto = t.Trajeto_id
-        JOIN Passar_Por p ON p.linha_id = l.linha_id
-        JOIN Estação e ON e.estacao_id = p.estacao_id
-        JOIN Cidade c ON c.cidade_id = e.cidade_id
-        WHERE u.CPF = :cpf;
+        CREATE OR REPLACE VIEW Linhas_Completas AS
+        SELECT 
+            l.linha_id as Linha_Id, 
+            l.nome AS Linha_Nome, 
+            e.empresa_id as Empresa_Id,
+            e.nome AS Empresa_Nome,
+            t.trajeto_id as Trajeto_Id,
+            t.origem as Origem,     
+            t.destino as Destino
+        FROM Linha l
+        JOIN Empresa e ON e.empresa_id = l.idEmpresa
+        JOIN Trajeto t ON t.trajeto_id = l.idTrajeto;
     ''')
 
     connection.commit()
@@ -219,6 +221,8 @@ def get_not_my_paths(connection, cpf):
                    (cpf,)
     )
 
+    connection.commit()
+
     paths = cursor.fetchall()
 
     return paths
@@ -229,6 +233,8 @@ def new_path(connection, origin, destination, cpf):
     cursor.execute("INSERT INTO Trajeto (Origem, Destino) VALUES (%s, %s) RETURNING Trajeto_Id",
                    (origin, destination)
     )
+
+    connection.commit()
 
     id = cursor.fetchone()[0]
 
@@ -257,6 +263,72 @@ def delete_path(connection, path):
 
     cursor.execute("DELETE FROM Trajeto WHERE Trajeto_Id=%s", 
                    (path,)
+    )
+
+    connection.commit()
+
+def get_corps(connection):
+    cursor = connection.cursor()
+
+    cursor.execute(f"SELECT DISTINCT * FROM Empresa",
+                   ()
+    )
+
+    connection.commit()
+
+    corps = cursor.fetchall()
+
+    return corps
+
+def get_paths(connection):
+    cursor = connection.cursor()
+
+    cursor.execute(f"SELECT DISTINCT * FROM Trajeto",
+                   ()
+    )
+
+    connection.commit()
+
+    paths = cursor.fetchall()
+
+    return paths
+
+def get_routes(connection):
+    cursor = connection.cursor()
+
+    cursor.execute(f"SELECT * FROM Linhas_Completas",
+                   ()
+    )
+
+    connection.commit()
+
+    routes = cursor.fetchall()
+
+    return routes
+
+def new_route(connection, route, corp, path):
+    cursor = connection.cursor()
+
+    cursor.execute("INSERT INTO Linha (Nome, idEmpresa, idTrajeto) VALUES (%s, %s, %s)",
+                   (route, corp, path)
+    )
+
+    connection.commit()
+
+def update_route(connection, route, new_name, new_corp, new_path):
+    cursor = connection.cursor()
+
+    cursor.execute("UPDATE Linha SET Nome=%s, idEmpresa=%s, idTrajeto=%s WHERE Linha_Id=%s", 
+                   (new_name, new_corp, new_path, route)
+    )
+
+    connection.commit()
+
+def delete_route(connection, route):
+    cursor = connection.cursor()
+
+    cursor.execute("DELETE FROM Linha WHERE Linha_Id=%s", 
+                   (route,)
     )
 
     connection.commit()
