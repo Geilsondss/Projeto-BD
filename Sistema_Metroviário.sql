@@ -157,20 +157,20 @@ INSERT INTO Itinerario (Itinerario_Id, Horario_saida, Horario_chegada, Funciona_
 (4005, '20:45:00', '21:15:00', 'Todos os dias');
 
 -- Inserções na tabela Trajeto
-INSERT INTO Trajeto (Trajeto_Id, Origem, Destino) VALUES
-(5001, 'Estação Central', 'Estação Praça do Relógio'),
-(5002, 'Estação Ceilândia Norte', 'Estação Águas Claras'),
-(5003, 'Estação Águas Claras', 'Estação Terminal Samambaia'),
-(5004, 'Estação Praça do Relógio', 'Estação Central'),
-(5005, 'Estação Terminal Samambaia', 'Estação Ceilândia Norte');
+INSERT INTO Trajeto (Origem, Destino) VALUES
+(2001, 2002),
+(2003, 2004),
+(2004, 2005),
+(2002, 2001),
+(2005, 2003);
 
 -- Inserções na tabela Linha
-INSERT INTO Linha (Linha_Id, Nome, IdEmpresa, IdTrajeto) VALUES
-(6001, 'Linha Verde', 3001, 5001),
-(6002, 'Linha Azul', 3002, 5002),
-(6003, 'Linha Laranja', 3003, 5003),
-(6004, 'Linha Amarela', 3004, 5004),
-(6005, 'Linha Roxa', 3005, 5005);
+INSERT INTO Linha (Linha_Id, Nome, IdEmpresa, Origem, Destino) VALUES
+(6001, 'Linha Verde', 3001, 2001, 2002),
+(6002, 'Linha Azul', 3002, 2003, 2004),
+(6003, 'Linha Laranja', 3003, 2004, 2005),
+(6004, 'Linha Amarela', 3004, 2002, 2001),
+(6005, 'Linha Roxa', 3005, 2005, 2003);
 
 -- Inserções na tabela Metro
 INSERT INTO Metro (Metro_Id, Capacidade, Modelo, IdEmpresa) VALUES
@@ -181,12 +181,12 @@ INSERT INTO Metro (Metro_Id, Capacidade, Modelo, IdEmpresa) VALUES
 (7005, 350, 'Modelo BR-500', 3005);
 
 -- Inserções na tabela Incidente
-INSERT INTO Incidente (Data, Tipo, IdTrajeto, IdMetro) VALUES
-('11-01-2025', 'Atraso técnico', 5001, 7001),
-('01-02-2025', 'Superlotação', 5002, 7002),
-('19-03-2025', 'Pane elétrica', 5003, 7003),
-('23-04-2025', 'Interrupção programada', 5004, 7004),
-('21-05-2025', 'Desvio operacional', 5005, 7005);
+INSERT INTO Incidente (Data, Tipo, Origem, Destino, IdMetro) VALUES
+('11-01-2025', 'Atraso técnico', 2001, 2002, 7001),
+('01-02-2025', 'Superlotação', 2003, 2004, 7002),
+('19-03-2025', 'Pane elétrica', 2004, 2005, 7003),
+('23-04-2025', 'Interrupção programada', 2002, 2001, 7004),
+('21-05-2025', 'Desvio operacional', 2005, 2003, 7005);
 
 -- Inserções na tabela Motorista
 INSERT INTO Motorista (Motorista_Id, Nome, Foto, Contato, IdLinha) VALUES
@@ -197,12 +197,12 @@ INSERT INTO Motorista (Motorista_Id, Nome, Foto, Contato, IdLinha) VALUES
 (8005, 'Pedro Henrique', NULL, '(61) 95555-5555', 6005);
 
 -- Inserções na tabela Passa_por
-INSERT INTO Passa_por (Estacao_Id, Linha_Id) VALUES
-(2001, 6001),
-(2002, 6001),
-(2003, 6002),
-(2004, 6002),
-(2005, 6003);
+INSERT INTO Passa_por (Origem, Destino, Linha_Id) VALUES
+(2001, 2002, 6001),
+(2003, 2004, 6002),
+(2004, 2005, 6003),
+(2002, 2001, 6004),
+(2005, 2003, 6005);
 
 -- Inserções na tabela Usuario
 INSERT INTO Usuario (CPF, Nome, Senha, Foto) VALUES
@@ -213,12 +213,12 @@ INSERT INTO Usuario (CPF, Nome, Senha, Foto) VALUES
 ('55555555555', 'Maristela Holanda', 'senha5', NULL);
 
 -- Inserções na tabela Realiza
-INSERT INTO Realiza (CPF, Trajeto_Id) VALUES
-('11111111111', 5001),
-('22222222222', 5002),
-('33333333333', 5003),
-('44444444444', 5004),
-('55555555555', 5005);
+INSERT INTO Realiza (CPF, Origem, Destino) VALUES
+('11111111111', 2001, 2002),
+('22222222222', 2003, 2004),
+('33333333333', 2004, 2005),
+('44444444444', 2002, 2001),
+('55555555555', 2005, 2003);
 
 -- Inserções na tabela Possui
 INSERT INTO Possui (Itinerario_Id, Linha_Id) VALUES
