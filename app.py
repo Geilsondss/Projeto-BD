@@ -12,17 +12,6 @@ connection = db.create_tables()
 def check_cpf(char, size):
     return char.isdigit() and len(size) <= 11
 
-def to_blob(path, photo=None):
-    if not photo:
-        photo = Photo.open(path.get())
-        photo = photo.resize((100, 100)) 
-
-        photo_blob = io.BytesIO()
-        photo.save(photo_blob, 'PNG')
-
-        return photo_blob.getvalue()
-    return photo
-
 def set_geometry(screen, new_width, new_height):
     width = screen.winfo_screenwidth()
     height = screen.winfo_screenheight()
@@ -32,44 +21,34 @@ def set_geometry(screen, new_width, new_height):
 
     screen.geometry(f"{new_width}x{new_height}+{width}+{height}")
 
-def search_photo(photo_panel, photo=None, path=None):
-    if path:
-        dir = file.askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg")])
-        if dir:
-            path.set(dir)
+def search_photo(photo_panel):
+    dir = file.askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg")])
+    if dir:
+        set_photo(photo_panel, dir)
 
-            photo = Photo.open(dir)
-            photo = photo.resize((100, 100))
+def set_photo(photo_panel, obj):
+    global photo_content
 
-            photo = PhotoTk.PhotoImage(photo)
-
-            photo_panel.config(image=photo)
-            photo_panel.image = photo
+    if isinstance(obj, str):
+        photo = Photo.open(obj)
     else:
-        if photo:
-            photo = Photo.open(io.BytesIO(photo))
+        photo = Photo.open(io.BytesIO(obj))
 
-            photo = PhotoTk.PhotoImage(photo)
-
-            photo_panel.config(image=photo)
-            photo_panel.image = photo
-
-def default_photo(photo_panel, path):
-    path.set("./Projeto-BD/default.jpg")
-
-    photo = Photo.open("./Projeto-BD/default.jpg")
     photo = photo.resize((100, 100))
+
+    photo_blob = io.BytesIO()
+    photo.save(photo_blob, 'PNG')
 
     photo = PhotoTk.PhotoImage(photo)
 
     photo_panel.config(image=photo)
     photo_panel.image = photo
 
+    photo_content = photo_blob.getvalue()
+
 def main():
     main_screen = tkinter.Tk()
     main_screen.title("Sistema Metroviário")
-
-    path = tkinter.StringVar() # Path to photo
 
     set_geometry(main_screen, 300, 300)
 
@@ -101,7 +80,6 @@ def main():
         name = name_field.get()
         cpf = cpf_field.get()
         password = password_field.get()
-        photo = to_blob(path)
 
         if not name or not password or not cpf:
             message.showwarning("Erro", "Preencha todos os campos")
@@ -111,7 +89,7 @@ def main():
             message.showwarning("Erro", "Preencha um CPF válido")
             return
 
-        if db.new_user(connection, name, cpf, password, photo):
+        if not db.sign_up(connection, name, cpf, password, photo_content):
             message.showwarning("Erro", "CPF fornecido já utilizado")
             return
 
@@ -120,10 +98,7 @@ def main():
         name_field.delete(0, tkinter.END)
         cpf_field.delete(0, tkinter.END)
         password_field.delete(0, tkinter.END)
-        path.set(str())
-        photo_panel.config(image=str())
-        photo_panel.image = str()
-        default_photo(photo_panel, path)
+        set_photo(photo_panel, "default.jpg")
 
 
     ### Labels ###
@@ -139,19 +114,22 @@ def main():
 
     photo_panel = tkinter.Label(main_screen)
     photo_panel.grid(row=6, column=1, padx=10, pady=10)
-    default_photo(photo_panel, path)
+    set_photo(photo_panel, "default.jpg")
 
 
     ### Fields ###
     name_field = tkinter.Entry(main_screen)
     name_field.grid(row=0, column=1, padx=10, pady=10)
+    name_field.insert(0, 'Victor Fontes')
 
     validation = (main_screen.register(check_cpf), '%S', '%P') # Check if it is less than 12 digits long
     cpf_field = tkinter.Entry(main_screen, validate='key', validatecommand=validation)
     cpf_field.grid(row=1, column=1, padx=10, pady=10)
+    cpf_field.insert(0, '44444444444')
 
     password_field = tkinter.Entry(main_screen, show="*")
     password_field.grid(row=2, column=1, padx=10, pady=10)
+    password_field.insert(0, 'senha4')
 
 
     ### Buttons ###
@@ -161,7 +139,7 @@ def main():
     sign_up_button = tkinter.Button(main_screen, text="Cadastrar", command=lambda: sign_up())
     sign_up_button.grid(row=3, column=1, padx=10, pady=10)
 
-    photo_button = tkinter.Button(main_screen, text="Escolher foto", command=lambda: search_photo(photo_panel, None, path))
+    photo_button = tkinter.Button(main_screen, text="Escolher foto", command=lambda: search_photo(photo_panel))
     photo_button.grid(row=6, column=0, padx=10, pady=10)
 
     main_screen.grid_columnconfigure(0, weight=1)
@@ -209,7 +187,10 @@ def home(user):
     ### Panels ###
     photo_panel = tkinter.Label(user_frame)
     photo_panel.grid(row=0, column=0, padx=(0, 10), sticky="w")
-    search_photo(photo_panel, user[3])
+    if user[3] == None:
+        set_photo(photo_panel, "default.jpg")
+    else:
+        set_photo(photo_panel, user[3])
 
 
     ### Buttons ###
@@ -225,7 +206,7 @@ def home(user):
     routes_button = tkinter.Button(scroll_frame, text="Gerenciar Linhas", width=15, command=lambda: manage_routes(home_screen, user))
     routes_button.grid(row=0, column=2, padx=30, pady=10)
 
-    paths_button = tkinter.Button(path_frame, text="Adicionar", width=10, command=lambda: assign_path(home_screen, user))
+    paths_button = tkinter.Button(path_frame, text="Adicionar", width=10, command=lambda: manage_paths(home_screen, user))
     paths_button.grid(row=0, column=1, padx=20, pady=10, sticky="w")
 
 
@@ -245,10 +226,10 @@ def home(user):
         path_label = tkinter.Label(path_frame, text=f"{path[1]} - {path[3]}")
         path_label.grid(row=i, column=2, padx=10, pady=5, sticky="w")
 
-        path_change_button = tkinter.Button(path_frame, text="Alterar", width=6, command=lambda: update_path(home_screen, user, path))
+        path_change_button = tkinter.Button(path_frame, text="Alterar", width=6, command=lambda path=path: update_path(home_screen, user, path))
         path_change_button.grid(row=i, column=0, padx=10, pady=5, sticky="w")
 
-        path_delete_button = tkinter.Button(path_frame, text="Excluir", width=6, command=lambda: delete_path(home_screen, user, path))
+        path_delete_button = tkinter.Button(path_frame, text="Excluir", width=6, command=lambda path=path: unassign_path(home_screen, user, path))
         path_delete_button.grid(row=i, column=1, padx=10, pady=5, sticky="w")
 
     path_frame.update_idletasks()
@@ -262,33 +243,26 @@ def update_user(screen, user):
     update_screen = tkinter.Tk()
     update_screen.title("Alterar usuário")
 
-    path = tkinter.StringVar()
-
     set_geometry(update_screen, 300, 300)
 
 
     ### Functions ###
     def update():
         name = name_field.get()
-        cpf = cpf_field.get()
         password = password_field.get()
-        photo = to_blob(path, user[3])
 
-        if not name or not password or not cpf:
+        if not name or not password:
             message.showwarning("Erro", "Preencha todos os campos")
-            return
-        
-        if len(cpf) < 11:
-            message.showwarning("Erro", "Preencha um CPF válido")
             return
 
         message.showinfo("Sucesso", "Usuário atualizado com sucesso")
 
-        new_user = db.update_user(connection, user[0], name_field.get(), cpf_field.get(), password_field.get(), photo)
-        update_screen.destroy()
-        home(new_user)
+        updated_user = db.update_user(connection, user[0], name, password, photo_content)
 
-    def cancel():
+        update_screen.destroy()
+        home(updated_user)
+
+    def back():
         update_screen.destroy()
         home(user)
 
@@ -309,9 +283,9 @@ def update_user(screen, user):
     photo_panel = tkinter.Label(update_screen)
     photo_panel.grid(row=6, column=1, padx=10, pady=10)
     if user[3] == None:
-        default_photo(photo_panel, path)
+        set_photo(photo_panel, "default.jpg")
     else:
-        search_photo(photo_panel, user[3])
+        set_photo(photo_panel, user[3])
 
 
     ### Fields ###
@@ -319,8 +293,10 @@ def update_user(screen, user):
     name_field.grid(row=0, column=1, padx=10, pady=10)
     name_field.insert(0, user[1])
 
-    validation = (update_screen.register(check_cpf), '%S', '%P')
-    cpf_field = tkinter.Entry(update_screen, validate='key', validatecommand=validation)
+    cpf = tkinter.StringVar()
+    cpf.set(user[0])
+    
+    cpf_field = tkinter.Entry(update_screen, textvariable=cpf, state="disabled")
     cpf_field.grid(row=1, column=1, padx=10, pady=10)
     cpf_field.insert(0, user[0])
 
@@ -330,13 +306,13 @@ def update_user(screen, user):
 
 
     ### Buttons ###
-    cancel_button = tkinter.Button(update_screen, width=6, text="Voltar", command=cancel)
+    cancel_button = tkinter.Button(update_screen, width=6, text="Voltar", command=back)
     cancel_button.grid(row=3, column=0, padx=10, pady=10)
 
     change_button = tkinter.Button(update_screen, width=6,  text="Alterar", command=update)
     change_button.grid(row=3, column=1, padx=10, pady=10)
 
-    photo_button = tkinter.Button(update_screen, text="Escolher foto", command=lambda: search_photo(photo_panel, None, path))
+    photo_button = tkinter.Button(update_screen, text="Escolher foto", command=lambda: search_photo(photo_panel))
     photo_button.grid(row=6, column=0, padx=10, pady=10)
 
     update_screen.grid_columnconfigure(0, weight=1)
@@ -351,11 +327,12 @@ def delete_user(screen, cpf):
     choice = message.askyesno("Confirmar", "Tem certeza que deseja deletar seu perfil?")
 
     if choice:
-        screen.destroy()
         db.delete_user(connection, cpf)
+
+        screen.destroy()
         main()
 
-def assign_path(screen, user):
+def manage_paths(screen, user):
     screen.destroy()
 
     path_screen = tkinter.Tk()
@@ -364,16 +341,7 @@ def assign_path(screen, user):
     set_geometry(path_screen, 780, 420)
         
     not_my_paths = db.get_paths(connection, user[0], False)
-    stations = db.get_stations(connection)
-
-    collect_id = {(path[1], path[3]) : path for path in not_my_paths}
-    collect_stations = {station[2] : station[0] for station in stations}
-
-    ### Frames ###
-    select_frame = tkinter.Frame(path_screen)
-    select_frame.grid(row=0, column=0, columnspan=20, padx=20, pady=(20, 0), sticky="w")
-    new_path_frame = tkinter.Frame(path_screen)
-    new_path_frame.grid(row=1, column=0, columnspan=20, padx=20, pady=20, sticky="w")
+    collect_id = {station[2] : station[0] for station in db.get_stations(connection)}
 
 
     ### Functions ###
@@ -382,11 +350,9 @@ def assign_path(screen, user):
 
         if item:        
             origin = select.item(item, "values")[0]
-            destination = select.item(item, "values")[1]
+            destination = select.item(item, "values")[2]
 
-            path = collect_id[(origin, destination)]
-
-            db.assign_path(connection, path[0], path[2], user[0])
+            db.assign_path(connection, origin, destination, user[0])
 
             path_screen.destroy()
             home(user)
@@ -395,36 +361,64 @@ def assign_path(screen, user):
         origin_name = origin_var.get()
         destination_name = destination_var.get()  
 
-        if origin_name != destination_name:
-            origin_id = collect_stations[origin_name]
-            destination_id = collect_stations[destination_name]
+        if not origin_name == str() and not destination_name == str():
+            if not origin_name == destination_name:
+                origin_id = collect_id[origin_name]
+                destination_id = collect_id[destination_name]
 
-            if db.new_path(connection, origin_id, destination_id):
-                db.assign_path(connection, origin_id, destination_id, user[0])
-                path_screen.destroy()
-                home(user)
+                if db.new_path(connection, origin_id, destination_id, user[0]):
+                    path_screen.destroy()
+                    home(user)
+                else:
+                    message.showinfo("Erro", "Este trajeto já existe, selecione-o")
             else:
-                message.showinfo("Erro", "Este trajeto já existe, selecione-o")
+                message.showinfo("Erro", "Origem e Destino devem ser diferentes")
         else:
-            message.showinfo("Erro", "Origem e Destino devem ser diferentes")
+            message.showinfo("Erro", "Selecione uma Origem e um Destino")
+
+    def delete():
+        item = select.selection()
+
+        if item:        
+            choice = message.askyesno("Confirmar", "Tem certeza que deseja deletar este trajeto?")
+
+            if choice:
+                origin = select.item(item, "values")[0]
+                destination = select.item(item, "values")[2]
+
+                db.delete_path(connection, origin, destination)
+                manage_paths(path_screen, user)
 
     def back():
         path_screen.destroy()
         home(user)
 
 
+    ### Frames ###
+    select_frame = tkinter.Frame(path_screen)
+    select_frame.grid(row=0, column=0, columnspan=20, padx=20, pady=(20, 0), sticky="w")
+    button_frame = tkinter.Frame(select_frame)
+    button_frame.grid(row=0, column=1, columnspan=20, padx=20, pady=(20, 0), sticky="w")
+    new_path_frame = tkinter.Frame(path_screen)
+    new_path_frame.grid(row=1, column=0, columnspan=20, padx=20, pady=20, sticky="w")
+
+
     ### Select ###
-    select = ttk.Treeview(select_frame, columns=("Origem", "Destino"), show="headings")
+    select = ttk.Treeview(select_frame, columns=("Id_Origem", "Origem", "Id_Destino", "Destino"), show="headings")
     select.grid(row=0, column=0, sticky="w")
 
+    select.heading("Id_Origem", text="Id_Origem")
     select.heading("Origem", text="Origem")
+    select.heading("Id_Destino", text="Id_Destino")
     select.heading("Destino", text="Destino")
 
-    select.column("#1", width=300)
+    select.column("#1", width=0, stretch=tkinter.NO)
     select.column("#2", width=300)
+    select.column("#3", width=0, stretch=tkinter.NO)
+    select.column("#4", width=300)
 
     for path in not_my_paths:
-        select.insert("", "end", values=(path[1], path[3]))
+        select.insert("", "end", values=(path[0], path[1], path[2], path[3]))
             
 
     ### Labels ###
@@ -436,32 +430,30 @@ def assign_path(screen, user):
 
 
     ### Options ###
-    station_option = [station[2] for station in stations]
+    station_option = list(collect_id.keys())  
 
     origin_var = tkinter.StringVar()
     destination_var = tkinter.StringVar()
 
-    if len(station_option) > 0:
+    if len(station_option) > 1:
         origin_var.set(station_option[0])
         destination_var.set(station_option[1])
+    elif len(station_option) > 0:
+        origin_var.set(station_option[0])
+        destination_var.set(station_option[0])
 
-        corp_menu = tkinter.OptionMenu(new_path_frame, origin_var, *station_option)
-        corp_menu.grid(row=0, column=1, pady=10, sticky="w")
-        path_menu = tkinter.OptionMenu(new_path_frame, destination_var, *station_option)
-        path_menu.grid(row=1, column=1, pady=10, sticky="w")
-    else:
-        origin_var.set("")
-        destination_var.set("")
-
-        corp_menu = tkinter.OptionMenu(new_path_frame, origin_var, "")
-        corp_menu.grid(row=0, column=1, pady=10, sticky="w")
-        path_menu = tkinter.OptionMenu(new_path_frame, destination_var, "")
-        path_menu.grid(row=1, column=1, pady=10, sticky="w")
+    corp_menu = tkinter.OptionMenu(new_path_frame, origin_var, *station_option)
+    corp_menu.grid(row=0, column=1, pady=10, sticky="w")
+    path_menu = tkinter.OptionMenu(new_path_frame, destination_var, *station_option)
+    path_menu.grid(row=1, column=1, pady=10, sticky="w")
 
 
     ### Buttons ###
-    assign_button = tkinter.Button(select_frame, text="Adicionar Trajeto", command=assign)
-    assign_button.grid(row=0, column=1, padx=28, pady=10, sticky="w")
+    assign_button = tkinter.Button(button_frame, text="Adicionar Trajeto", width=15, command=assign)
+    assign_button.grid(row=0, column=1, pady=10, sticky="w")
+
+    delete_button = tkinter.Button(button_frame, text="Deletar Trajeto", width=15, command=delete)
+    delete_button.grid(row=1, column=1, pady=10, sticky="w")
 
     add_button = tkinter.Button(new_path_frame, text="Criar Novo Trajeto", command=create)
     add_button.grid(row=2, column=0, pady=10, sticky="w")
@@ -479,9 +471,7 @@ def update_path(screen, user, path):
 
     set_geometry(path_screen, 340, 150)
 
-    stations = db.get_stations(connection)
-
-    collect_stations = {station[2] : station[0] for station in stations}
+    collect_id = {station[2] : station[0] for station in db.get_stations(connection)}
     
 
     ### Function ###
@@ -489,16 +479,20 @@ def update_path(screen, user, path):
         origin_name = origin_var.get()
         destination_name = destination_var.get()  
 
-        if origin_name != destination_name:
-            origin_id = collect_stations[origin_name]
-            destination_id = collect_stations[destination_name]
+        if origin_name != str() and destination_name != str():
+            if origin_name != destination_name:
+                origin_id = collect_id[origin_name]
+                destination_id = collect_id[destination_name]
 
-            db.update_path(connection, path[0], path[2], user[0], origin_id, destination_id)
-
-            path_screen.destroy()
-            home(user)
+                if db.update_path(connection, path[0], path[2], user[0], origin_id, destination_id):
+                    path_screen.destroy()
+                    home(user)
+                else:
+                    message.showinfo("Erro", "Você já possui este trajeto")
+            else:
+                message.showinfo("Erro", "Origem e Destino devem ser diferentes")
         else:
-            message.showinfo("Erro", "Origem e Destino devem ser diferentes")
+            message.showinfo("Erro", "Selecione uma Origem e um Destino")
 
     def back():
         path_screen.destroy()
@@ -506,27 +500,18 @@ def update_path(screen, user, path):
 
 
     ### Options ###
-    station_option = [station[2] for station in stations]
+    station_option = list(collect_id.keys())
 
     origin_var = tkinter.StringVar()
     destination_var = tkinter.StringVar()
 
-    if len(station_option) > 0:
-        origin_var.set(path[1])
-        destination_var.set(path[3])
+    origin_var.set(path[1])
+    destination_var.set(path[3])
 
-        corp_menu = tkinter.OptionMenu(path_screen, origin_var, *station_option)
-        corp_menu.grid(row=2, column=1, pady=10, sticky="w")
-        path_menu = tkinter.OptionMenu(path_screen, destination_var, *station_option)
-        path_menu.grid(row=3, column=1, pady=10, sticky="w")
-    else:
-        origin_var.set("")
-        destination_var.set("")
-
-        corp_menu = tkinter.OptionMenu(path_screen, origin_var, "")
-        corp_menu.grid(row=2, column=1, pady=10, sticky="w")
-        path_menu = tkinter.OptionMenu(path_screen, destination_var, "")
-        path_menu.grid(row=3, column=1, pady=10, sticky="w")
+    corp_menu = tkinter.OptionMenu(path_screen, origin_var, *station_option)
+    corp_menu.grid(row=2, column=1, pady=10, sticky="w")
+    path_menu = tkinter.OptionMenu(path_screen, destination_var, *station_option)
+    path_menu.grid(row=3, column=1, pady=10, sticky="w")
             
 
     ### Labels ###
@@ -546,11 +531,11 @@ def update_path(screen, user, path):
 
     path_screen.mainloop()
 
-def delete_path(screen, user, path):
-    choice = message.askyesno("Confirmar", "Tem certeza que deseja deletar este trajeto?")
+def unassign_path(screen, user, path):
+    choice = message.askyesno("Confirmar", "Tem certeza que deseja remover este trajeto?")
 
     if choice:
-        db.delete_path(connection, user[0], path[0], path[2])
+        db.unassign_path(connection, user[0], path[0], path[2])
         screen.destroy()
         home(user)
 
@@ -562,12 +547,9 @@ def manage_routes(screen, user):
 
     set_geometry(manage_screen, 880, 515)
 
-    items = db.get_routes(connection)
-
-    collect_items = {item[1] : item for item in items}
-    collect_stations = {station[2] : station[0] for station in db.get_stations(connection)}
-    collect_corps = {corp[1] : corp[0] for corp in db.get_corps(connection)}
-    collect_routes = {item[1] : item[0] for item in items}
+    collect_id = {station[2] : station[0] for station in db.get_stations(connection)}
+    collect_corp = {corp[1] : corp[0] for corp in db.get_corps(connection)}
+    collect_routes = {route[1] : route for route in db.get_routes(connection)}
 
 
     ### Frames ###
@@ -579,20 +561,18 @@ def manage_routes(screen, user):
 
     ### Functions ###
     def create():
-        if not name_field.get() == "" and not corp_var.get() == "" and not origin_var.get() == "" and not destination_var.get() == "":
-            route_name = name_field.get()
-            corp_name = corp_var.get()
-            origin_name = origin_var.get()  
-            destination_name = destination_var.get()
-
+        route_name = name_field.get()
+        corp_name = corp_var.get()
+        origin_name = origin_var.get()  
+        destination_name = destination_var.get()
+        
+        if not route_name == str() and not corp_name == str() and not origin_name == str() and not destination_name == str():
             if not origin_name == destination_name:
-                corp_id = collect_corps[corp_name]
-                origin_id = collect_stations[origin_name]
-                destination_id = collect_stations[destination_name]
+                corp_id = collect_corp[corp_name]
+                origin_id = collect_id[origin_name]
+                destination_id = collect_id[destination_name]
 
-                result = db.new_route(connection, route_name, corp_id, origin_id, destination_id)
-
-                if result:
+                if db.new_route(connection, route_name, corp_id, origin_id, destination_id):
                     manage_routes(manage_screen, user)
                 else:
                     message.showerror("Erro", "Já existe uma linha com esse nome")
@@ -605,10 +585,10 @@ def manage_routes(screen, user):
         item = select.selection()
 
         if item:        
-            route_name = select.item(item, "values")[0]
-            route = collect_items[route_name]
+            route_name = select.item(item, "values")[1]
+            route = collect_routes[route_name]
 
-            update_route(manage_screen, user, route, items)
+            update_route(manage_screen, user, route)
 
     def delete():
         item = select.selection()
@@ -617,10 +597,10 @@ def manage_routes(screen, user):
             choice = message.askyesno("Confirmar", "Tem certeza que deseja deletar essa linha?")
 
             if choice:  
-                route_name = select.item(item, "values")[0]
-                route_id = collect_routes[route_name]
+                route_name = select.item(item, "values")[1]
+                route = collect_routes[route_name]
 
-                db.delete_route(connection, route_id)
+                db.delete_route(connection, route[0])
                 manage_routes(manage_screen, user)  
 
     def back():
@@ -629,24 +609,25 @@ def manage_routes(screen, user):
 
 
     ### Select ###
-    select = ttk.Treeview(manage_screen, columns=("Linha", "Empresa", "Trajeto"), show="headings")
+    select = ttk.Treeview(manage_screen, columns=("Id_Linha", "Linha", "Empresa", "Trajeto"), show="headings")
     select.grid(row=0, column=0, padx=(20, 0), pady=20, sticky="w")
 
     select.heading("Linha", text="Linha")
     select.heading("Empresa", text="Empresa")
     select.heading("Trajeto", text="Trajeto")
 
-    select.column("#1", width=150)
-    select.column("#2", width=180)
-    select.column("#3", width=340)
+    select.column("#1", width=0, stretch=tkinter.NO)
+    select.column("#2", width=150)
+    select.column("#3", width=180)
+    select.column("#4", width=340)
 
-    for item in items:
-        select.insert("", "end", values=(item[1], item[3], f"{item[5]} - {item[7]}"))
+    for route in db.get_routes(connection):
+        select.insert("", "end", values=(route[0], route[1], route[3], f"{route[5]} - {route[7]}"))
 
 
     ### Options ###
-    corp_option = [corp[1] for corp in db.get_corps(connection)]
-    station_option = [station[2] for station in db.get_stations(connection)]
+    corp_option = list(collect_corp.keys())
+    station_option = list(collect_id.keys())
 
     corp_var = tkinter.StringVar()
     origin_var = tkinter.StringVar()
@@ -655,38 +636,19 @@ def manage_routes(screen, user):
     if len(corp_option) > 0:
         corp_var.set(corp_option[0])
 
-        corp_menu = tkinter.OptionMenu(new_route_frame, corp_var, *corp_option)
-        corp_menu.grid(row=1, column=1, pady=10, sticky="w")
-    else:
-        corp_var.set("")
-
-        corp_menu = tkinter.OptionMenu(new_route_frame, corp_var, "")
-        corp_menu.grid(row=1, column=1, pady=10, sticky="w")
-
     if len(station_option) > 1:
         origin_var.set(station_option[0])
         destination_var.set(station_option[1])
-
-        origin_menu = tkinter.OptionMenu(new_route_frame, origin_var, *station_option)
-        origin_menu.grid(row=2, column=1, pady=10, sticky="w")
-        destination_menu = tkinter.OptionMenu(new_route_frame, destination_var, *station_option)
-        destination_menu.grid(row=3, column=1, pady=10, sticky="w")
     elif len(station_option) > 0:
         origin_var.set(station_option[0])
         destination_var.set(station_option[0])
 
-        origin_menu = tkinter.OptionMenu(new_route_frame, origin_var, *station_option)
-        origin_menu.grid(row=2, column=1, pady=10, sticky="w")
-        destination_menu = tkinter.OptionMenu(new_route_frame, destination_var, *station_option)
-        destination_menu.grid(row=3, column=1, pady=10, sticky="w")
-    else:
-        origin_var.set("")
-        destination_var.set("")
-
-        origin_menu = tkinter.OptionMenu(new_route_frame, origin_var, "")
-        origin_menu.grid(row=2, column=1, pady=10, sticky="w")
-        destination_menu = tkinter.OptionMenu(new_route_frame, destination_var, "")
-        destination_menu.grid(row=3, column=1, pady=10, sticky="w")
+    corp_menu = tkinter.OptionMenu(new_route_frame, corp_var, *corp_option)
+    corp_menu.grid(row=1, column=1, pady=10, sticky="w")
+    origin_menu = tkinter.OptionMenu(new_route_frame, origin_var, *station_option)
+    origin_menu.grid(row=2, column=1, pady=10, sticky="w")
+    destination_menu = tkinter.OptionMenu(new_route_frame, destination_var, *station_option)
+    destination_menu.grid(row=3, column=1, pady=10, sticky="w")
     
 
     ### Labels ###
@@ -723,7 +685,7 @@ def manage_routes(screen, user):
 
     manage_screen.mainloop()
 
-def update_route(screen, user, route, items):
+def update_route(screen, user, route):
     screen.destroy()
 
     update_screen = tkinter.Tk()
@@ -731,11 +693,8 @@ def update_route(screen, user, route, items):
 
     set_geometry(update_screen, 433, 252)
 
-    items = db.get_routes(connection)
-
-    collect_stations = {item[5] : item[4] for item in items}
-    collect_stations.update({item[7] : item[6] for item in items})
-    collect_corps = {item[3] : item[2] for item in items}
+    collect_id = {station[2] : station[0] for station in db.get_stations(connection)}
+    collect_corp = {corp[1] : corp[0] for corp in db.get_corps(connection)}
 
 
     ### Frame ###
@@ -747,20 +706,18 @@ def update_route(screen, user, route, items):
 
     ### Functions ###
     def update(): 
-        if not name_field.get() == "" and not corp_var.get() == "" and not origin_var.get() == "" and not destination_var.get() == "":
-            route_name = name_field.get()
-            corp_name = corp_var.get()
-            origin_name = origin_var.get()  
-            destination_name = destination_var.get()
-
+        route_name = name_field.get()
+        corp_name = corp_var.get()
+        origin_name = origin_var.get()  
+        destination_name = destination_var.get()
+        
+        if not route_name == str() and not corp_name == str() and not origin_name == str() and not destination_name == str():
             if not origin_name == destination_name:
-                corp_id = collect_corps[corp_name]
-                origin_id = collect_stations[origin_name]
-                destination_id = collect_stations[destination_name]
+                corp_id = collect_corp[corp_name]
+                origin_id = collect_id[origin_name]
+                destination_id = collect_id[destination_name]
 
-                result = db.update_route(connection, route[0], route[1], route[4], route[6], route_name, corp_id, origin_id, destination_id)
-
-                if result:
+                if db.update_route(connection, route[0], route[1], route[4], route[6], route_name, corp_id, origin_id, destination_id):
                     manage_routes(update_screen, user)
                 else:
                     message.showerror("Erro", "Já existe uma linha com esse nome")
@@ -774,48 +731,29 @@ def update_route(screen, user, route, items):
             
 
     ### Options ###
-    corp_option = [corp[1] for corp in db.get_corps(connection)]
-    station_option = [station[2] for station in db.get_stations(connection)]
+    corp_option = list(collect_corp.keys())
+    station_option = list(collect_id.keys())
 
     corp_var = tkinter.StringVar()
     origin_var = tkinter.StringVar()
     destination_var = tkinter.StringVar()
 
     if len(corp_option) > 0:
-        corp_var.set(route[3])
-
-        corp_menu = tkinter.OptionMenu(update_route_frame, corp_var, *corp_option)
-        corp_menu.grid(row=1, column=1, pady=10, sticky="w")
-    else:
-        corp_var.set("")
-
-        corp_menu = tkinter.OptionMenu(update_route_frame, corp_var, "")
-        corp_menu.grid(row=1, column=1, pady=10, sticky="w")
+        corp_var.set(corp_option[0])
 
     if len(station_option) > 1:
-        origin_var.set(route[5])
-        destination_var.set(route[7])
-
-        origin_menu = tkinter.OptionMenu(update_route_frame, origin_var, *station_option)
-        origin_menu.grid(row=2, column=1, pady=10, sticky="w")
-        destination_menu = tkinter.OptionMenu(update_route_frame, destination_var, *station_option)
-        destination_menu.grid(row=3, column=1, pady=10, sticky="w")
+        origin_var.set(station_option[0])
+        destination_var.set(station_option[1])
     elif len(station_option) > 0:
-        origin_var.set(route[5])
-        destination_var.set(route[5])
+        origin_var.set(station_option[0])
+        destination_var.set(station_option[0])
 
-        origin_menu = tkinter.OptionMenu(update_route_frame, origin_var, *station_option)
-        origin_menu.grid(row=2, column=1, pady=10, sticky="w")
-        destination_menu = tkinter.OptionMenu(update_route_frame, destination_var, *station_option)
-        destination_menu.grid(row=3, column=1, pady=10, sticky="w")
-    else:
-        origin_var.set("")
-        destination_var.set("")
-
-        origin_menu = tkinter.OptionMenu(update_route_frame, origin_var, "")
-        origin_menu.grid(row=2, column=1, pady=10, sticky="w")
-        destination_menu = tkinter.OptionMenu(update_route_frame, destination_var, "")
-        destination_menu.grid(row=3, column=1, pady=10, sticky="w")
+    corp_menu = tkinter.OptionMenu(update_route_frame, corp_var, *corp_option)
+    corp_menu.grid(row=1, column=1, pady=10, sticky="w")
+    origin_menu = tkinter.OptionMenu(update_route_frame, origin_var, *station_option)
+    origin_menu.grid(row=2, column=1, pady=10, sticky="w")
+    destination_menu = tkinter.OptionMenu(update_route_frame, destination_var, *station_option)
+    destination_menu.grid(row=3, column=1, pady=10, sticky="w")
 
 
     ### Labels ###
@@ -849,4 +787,3 @@ def update_route(screen, user, route, items):
 
 if __name__ == "__main__":
     main()
-    #home(['02097726119', 'Victor', 'Leo1', None])
