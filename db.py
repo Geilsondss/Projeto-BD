@@ -11,7 +11,7 @@ def create_tables():
 
     cursor = connection.cursor()
 
-    with open('Sistema_Metroviário.sql', 'r', encoding='utf-8') as file:
+    with open('db.sql', 'r', encoding='utf-8') as file:
         sql = file.read()
 
     cursor.execute(sql)
@@ -180,7 +180,7 @@ def get_stations(connection):
 def get_routes(connection):
     cursor = connection.cursor()
 
-    cursor.execute("SELECT * FROM Linhas_Completas()",
+    cursor.execute("SELECT * FROM Linhas_Completas",
                    ()
     )
 

@@ -117,6 +117,22 @@ CREATE TABLE IF NOT EXISTS Possui (
     FOREIGN KEY (Itinerario_Id) REFERENCES Itinerario (Itinerario_Id),
     FOREIGN KEY (Linha_Id) REFERENCES Linha (Linha_Id) ON DELETE CASCADE
 );
+
+CREATE OR REPLACE VIEW Linhas_Completas AS 
+SELECT 
+    l.linha_id,
+    l.nome AS Nome_Linha,
+    e.empresa_id,
+    e.nome AS Nome_Empresa,
+    s1.estacao_id AS Id_Origem,
+    s1.nome AS Nome_Origem,
+    s2.estacao_id AS Id_Destino,
+    s2.nome AS Nome_Destino
+FROM Linha l
+JOIN Empresa e ON e.empresa_id = l.idempresa
+JOIN Passa_Por p ON p.linha_id = l.linha_id
+JOIN Estacao s1 ON s1.estacao_id = p.origem
+JOIN Estacao s2 ON s2.estacao_id = p.destino; 
             
 CREATE OR REPLACE PROCEDURE Inserção_Linha (route TEXT, corp INT, origin INT, destination INT)
 AS $$
@@ -179,39 +195,6 @@ BEGIN
     RETURN QUERY EXECUTE query USING user_cpf;
 END;    
 $$ LANGUAGE plpgsql;  
-
-CREATE OR REPLACE FUNCTION Linhas_Completas ()
-RETURNS TABLE (
-    idLinha INT, 
-    nomeLinha VARCHAR(50),
-    idEmpresa INT,
-    nomeEmpresa VARCHAR(50),
-    idOrigem INT, 
-    nomeOrigem VARCHAR(50),
-    idDestino INT,  
-    nomeDestino VARCHAR(50)
-) AS $$
-DECLARE
-    query TEXT;
-BEGIN
-    query := 'SELECT 
-                l.linha_id,
-                l.nome,
-                e.empresa_id,
-                e.nome,
-                s1.estacao_id,
-                s1.nome,
-                s2.estacao_id,
-                s2.nome
-            FROM Linha l
-            JOIN Empresa e ON e.empresa_id = l.idempresa
-            JOIN Passa_Por p ON p.linha_id = l.linha_id
-            JOIN Estacao s1 ON s1.estacao_id = p.origem
-            JOIN Estacao s2 ON s2.estacao_id = p.destino';
-
-    RETURN QUERY EXECUTE query;
-END;    
-$$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION Deletar_BD ()
 RETURNS void
