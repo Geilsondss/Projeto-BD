@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS Incidente (
     Origem INT,
     Destino INT,
     IdMetro INT,
-    PRIMARY KEY (Data, Tipo, Origem, Destino, IdMetro),
+    PRIMARY KEY (Origem, Destino, IdMetro),
     FOREIGN KEY (Origem, Destino) REFERENCES Trajeto (Origem, Destino) ON DELETE CASCADE,
     FOREIGN KEY (IdMetro) REFERENCES Metro (Metro_Id)
 );

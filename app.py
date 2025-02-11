@@ -120,16 +120,13 @@ def main():
     ### Fields ###
     name_field = tkinter.Entry(main_screen)
     name_field.grid(row=0, column=1, padx=10, pady=10)
-    name_field.insert(0, 'Victor Fontes')
 
     validation = (main_screen.register(check_cpf), '%S', '%P') # Check if it is less than 12 digits long
     cpf_field = tkinter.Entry(main_screen, validate='key', validatecommand=validation)
     cpf_field.grid(row=1, column=1, padx=10, pady=10)
-    cpf_field.insert(0, '44444444444')
 
     password_field = tkinter.Entry(main_screen, show="*")
     password_field.grid(row=2, column=1, padx=10, pady=10)
-    password_field.insert(0, 'senha4')
 
 
     ### Buttons ###
@@ -738,15 +735,9 @@ def update_route(screen, user, route):
     origin_var = tkinter.StringVar()
     destination_var = tkinter.StringVar()
 
-    if len(corp_option) > 0:
-        corp_var.set(corp_option[0])
-
-    if len(station_option) > 1:
-        origin_var.set(station_option[0])
-        destination_var.set(station_option[1])
-    elif len(station_option) > 0:
-        origin_var.set(station_option[0])
-        destination_var.set(station_option[0])
+    corp_var.set(route[3])
+    origin_var.set(route[5])
+    destination_var.set(route[7])
 
     corp_menu = tkinter.OptionMenu(update_route_frame, corp_var, *corp_option)
     corp_menu.grid(row=1, column=1, pady=10, sticky="w")
