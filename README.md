@@ -18,7 +18,7 @@ O principal objetivo deste sistema é fornecer um banco de dados eficiente para 
   - Exclusão de linhas ou trajetos
 
 - Dentre outras operações.
-- 
+
 ## Funcionalidades
 
 ### Usuários Comuns
@@ -59,7 +59,7 @@ Este projeto é composto por três camadas principais:
 
 ## Desenvolvedores
 Este projeto foi desenvolvido por:
-  Arthur - Artdelpi
-  Geilson - Geilsondss
-  Victor - VictorFontesCavalcante
-  Wesley - ShadowmereSmith
+  - Arthur  -> Artdelpi
+  - Geilson -> Geilsondss
+  - Victor  -> VictorFontesCavalcante
+  - Wesley  -> ShadowmereSmith
