@@ -55,7 +55,7 @@ Este projeto é composto por três camadas principais:
    - Implementada em **Python**, onde toda a lógica de negócios do sistema é processada.
    
 3. **Camada de Apresentação**:
-   - Desenvolvida com **Flask**, fornecendo uma interface web para interação com o sistema. Usuários e administradores podem acessar as funcionalidades de maneira simples e intuitiva.
+   - Desenvolvida com **Flask**, fornecendo uma interface para interação com o sistema. Usuários e administradores podem acessar as funcionalidades de maneira simples e intuitiva.
 
 ## Desenvolvedores
 Este projeto foi desenvolvido por:
